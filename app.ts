@@ -7,12 +7,12 @@ import { ExportResponse } from './interface'
 dotenv.config()
 
 const API_BASE_URL = 'https://api.fordefi.com/api/v1';
-const EXPORT_PARAMS = 'export?types=evm_transaction&limit=5'; // CONFIGURE AS NEEDED -> https://docs.fordefi.com/api/latest/openapi/transactions/export_transactions_api_v1_transactions_export_get
+//const EXPORT_PARAMS = 'export?created_after=2025-07-27T00%3A00%3A00Z&created_before=2025-08-18T00%3A00%3A00Z&sub_types=contract_call&direction=incoming'; // CONFIGURE AS NEEDED -> https://docs.fordefi.com/api/latest/openapi/transactions/export_transactions_api_v1_transactions_export_get
+const EXPORT_PARAMS = 'export?created_after=2025-08-16&created_before=2025-08-20&vault_ids=6e4e57ce-4174-4467-96d8-2d466fca8eb2&asset_ids=f4f6fcee-47d4-4849-83a6-19be78d040a6&direction=incoming'
 const POLL_INTERVAL_MS = 2000;
-const MAX_POLL_ATTEMPTS = 150;
 const MAX_DOWNLOAD_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
-const FORDEFI_API_USER_TOKEN = process.env.FORDEFI_API_USER_TOKEN;
+const FORDEFI_API_USER_TOKEN = process.env.TEMP_TOKEN;
 if (!FORDEFI_API_USER_TOKEN) {
   console.error('Error: FORDEFI_API_USER_TOKEN environment variable is required');
   process.exit(1);
@@ -30,9 +30,18 @@ async function requestExport(): Promise<string> {
     }
   });
   if (!response.ok) {
-    throw new Error(`Failed to request export: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to request export: ${response.status} ${response.statusText}. Response: ${errorText}`);
   }
-  const data: ExportResponse = await response.json();
+
+  const responseText = await response.text();
+  console.log('Response body:', responseText);
+
+  if (!responseText) {
+    throw new Error('Empty response body received from API');
+  }
+
+  const data: ExportResponse = JSON.parse(responseText);
   console.log(`Export requested successfully. ID: ${data.id}`);
   console.log(`Initial state: ${data.state}`);
   
@@ -41,7 +50,8 @@ async function requestExport(): Promise<string> {
 
 async function pollExportStatus(exportId: string): Promise<ExportResponse> {
   console.log('Polling export status...');
-  for (let attempt = 1; attempt <= MAX_POLL_ATTEMPTS; attempt++) {
+  let attempt = 1;
+  while (true) {
     const response = await fetch(`${API_BASE_URL}/exports/${exportId}`, {
       method: 'GET',
       headers: {
@@ -60,14 +70,15 @@ async function pollExportStatus(exportId: string): Promise<ExportResponse> {
       console.log(`Successful items: ${data.successful_items_count}`);
       console.log(`Failed items: ${data.failed_items_count}`);
       return data;
-    }   
+    }
     if (data.state === 'error') {
-      throw new Error('Export failed');
+      console.error('Export failed with error state');
+      console.error('Full export response:', JSON.stringify(data, null, 2));
+      throw new Error(`Export failed - State: ${data.state}, Export ID: ${exportId}, Response: ${JSON.stringify(data)}`);
     }
     await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+    attempt++;
   }
-  
-  throw new Error(`Export did not complete within ${MAX_POLL_ATTEMPTS} attempts`);
 }
 
 function extractFilename(url: string): string {

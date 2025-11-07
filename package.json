@@ -7,7 +7,8 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "export": "npx tsx app.ts"
+    "export": "npx tsx app.ts",
+    "abort": "npx tsx abort-transactions.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.8",
