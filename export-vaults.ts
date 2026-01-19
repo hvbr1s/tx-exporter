@@ -7,12 +7,11 @@ import { ExportResponse } from './interface'
 dotenv.config()
 
 const API_BASE_URL = 'https://api.fordefi.com/api/v1';
-//const EXPORT_PARAMS = 'export?created_after=2025-07-27T00%3A00%3A00Z&created_before=2025-08-18T00%3A00%3A00Z&sub_types=contract_call&direction=incoming'; // CONFIGURE AS NEEDED -> https://docs.fordefi.com/api/latest/openapi/transactions/export_transactions_api_v1_transactions_export_get
-const EXPORT_PARAMS = 'export?created_after=2025-08-16&created_before=2025-08-20&vault_ids=6e4e57ce-4174-4467-96d8-2d466fca8eb2&asset_ids=f4f6fcee-47d4-4849-83a6-19be78d040a6&direction=incoming'
+const EXPORT_PARAMS = '/vaults/export_async'
 const POLL_INTERVAL_MS = 2000;
 const MAX_DOWNLOAD_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
-const FORDEFI_API_USER_TOKEN = process.env.TEMP_TOKEN;
+const FORDEFI_API_USER_TOKEN = process.env.FORDEFI_API_USER_TOKEN;
 if (!FORDEFI_API_USER_TOKEN) {
   console.error('Error: FORDEFI_API_USER_TOKEN environment variable is required');
   process.exit(1);
@@ -20,7 +19,7 @@ if (!FORDEFI_API_USER_TOKEN) {
 
 async function requestExport(): Promise<string> {
   console.log('Requesting new transaction export...');
-  const endpoint = `${API_BASE_URL}/transactions/${EXPORT_PARAMS}`
+  const endpoint = `${API_BASE_URL}${EXPORT_PARAMS}`
   console.log(`Pinging endpoint`, endpoint)
   const response = await fetch(endpoint, {
     method: 'GET',
