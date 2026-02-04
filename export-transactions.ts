@@ -7,13 +7,14 @@ import { ExportResponse } from './interface'
 dotenv.config()
 
 const API_BASE_URL = 'https://api.fordefi.com/api/v1';
-const EXPORT_PARAMS = '/transactions/export?created_after=2025-07-27T00%3A00%3A00Z&created_before=2025-08-18T00%3A00%3A00Z&sub_types=contract_call&direction=incoming'; // CONFIGURE AS NEEDED -> https://docs.fordefi.com/api/latest/openapi/transactions/export_transactions_api_v1_transactions_export_get
+let EXPORT_PARAMS: string;
+EXPORT_PARAMS = "/transactions/export"
 const POLL_INTERVAL_MS = 2000;
 const MAX_DOWNLOAD_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
 const FORDEFI_API_USER_TOKEN = process.env.FORDEFI_API_USER_TOKEN;
 if (!FORDEFI_API_USER_TOKEN) {
-  console.error('Error: FORDEFI_API_USER_TOKEN environment variable is required');
+  console.error('Error: API User Token is required');
   process.exit(1);
 }
 
@@ -109,8 +110,12 @@ async function downloadFile(downloadUrl: string, exportId?: string): Promise<voi
       if (response.ok) {
         const buffer = await response.arrayBuffer();
         const fileName = extractFilename(downloadUrl);
-        const filePath = path.join(__dirname, fileName);
-        
+        const txsDir = path.join(__dirname, 'txs');
+        if (!fs.existsSync(txsDir)) {
+          fs.mkdirSync(txsDir, { recursive: true });
+        }
+        const filePath = path.join(txsDir, fileName);
+
         fs.writeFileSync(filePath, Buffer.from(buffer));
         
         console.log(`File downloaded successfully: ${filePath}`);

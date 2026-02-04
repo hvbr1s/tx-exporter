@@ -20,7 +20,6 @@ async function fetchAllAssets() {
   while (true) {
     let url;
     url = `${BASE_URL}?is_hidden=false&size=${size}&page=${page}`;
-    //url = `${BASE_URL}?is_hidden=false&size=${size}&page=${page}&is_nft=false`;
     console.log(`Fetching page ${page}...`);
 
     const response = await fetch(url, {
